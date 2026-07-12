@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScribeTube — Premium AI YouTube Summarizer</title>
+    <meta name="description" content="Extract transcripts and generate instant, structured AI-powered summaries from any YouTube video. Clean, fast, and responsive.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <i class="fa-brands fa-youtube logo-icon"></i>
+                    <span class="logo-text">ScribeTube</span>
+                </div>
+                <button class="mobile-sidebar-close" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="homeTab">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="historyTab">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>History</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="favoritesTab">
+                    <i class="fa-solid fa-star"></i>
+                    <span>Favorites</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="authTab" id="sidebarAuthBtn">
+                    <i class="fa-solid fa-user-lock"></i>
+                    <span>Sign In</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-divider"></div>
+
+            <!-- Recent Summaries Submenu -->
+            <div class="recent-summaries-container">
+                <span class="section-label">Recent Summaries</span>
+                <ul class="recent-list" id="sidebarRecentList">
+                    <!-- Dynamic Small Links Injected by JS -->
+                    <li class="empty-recent-msg">No summaries generated yet.</li>
+                </ul>
+            </div>
+
+            <!-- Sidebar Bottom Footer Controls -->
+            <div class="sidebar-footer">
+                <!-- User Profile Card -->
+                <div class="sidebar-profile-card hidden" id="sidebarProfileCard">
+                    <div class="profile-avatar">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                    </div>
+                    <div class="profile-info">
+                        <span class="profile-name" id="profileUsername">Guest</span>
+                        <span class="profile-status">Premium Account</span>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn" title="Sign Out" aria-label="Sign Out">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+
+                <div class="theme-switch-wrapper">
+                    <span class="switch-label">
+                        <i class="fa-solid fa-circle-half-stroke"></i>
+                        <span class="theme-label-text"></span>
+                    </span>
+                    <button id="themeToggle" class="theme-switch" aria-label="Toggle theme">
+                        <span class="theme-switch-thumb"></span>
+                        <i class="fa-solid fa-moon moon-icon" title="Dark Mode"></i>
+                        <i class="fa-solid fa-sun sun-icon" title="Light Mode"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Context -->
+        <div class="app-content">
+            <!-- Mobile Header Navigation bar -->
+            <header class="mobile-header">
+                <button class="hamburger-menu-btn" id="sidebarOpenBtn" aria-label="Open navigation sidebar">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="logo">
+                    <i class="fa-brands fa-youtube logo-icon"></i>
+                    <span class="logo-text">ScribeTube</span>
+                </div>
+                <div class="spacer"></div>
+            </header>
+
+            <main class="app-main-content">
+                
+                <!-- Tab PANE 1: Home (Main Summarizer Dashboard) -->
+                <div id="homeTab" class="tab-content active">
+                    <!-- Hero Header -->
+                    <section class="hero-section">
+                        <h1 class="hero-title">YouTube Videos, <span class="gradient-text">Summarized in Seconds</span></h1>
+                        <p class="hero-subtitle">Paste any YouTube URL to extract the transcript and generate a structured summary, key insights, and main takeaways using advanced AI.</p>
+                    </section>
+
+                    <!-- Config Warning Banner -->
+                    <div id="configWarning" class="warning-banner hidden">
+                        <div class="warning-icon">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="warning-content">
+                            <h3>API Key Configuration Required</h3>
+                            <p>It looks like the <code>GEMINI_API_KEY</code> is not configured. Please create a <code>.env</code> file in the root of the project with your API key to enable AI summarization.</p>
+                        </div>
+                    </div>
+
+                    <!-- Summarizer Form -->
+                    <section class="form-section">
+                        <div class="glass-card form-card">
+                            <form id="summarizeForm">
+                                <div class="input-group">
+                                    <div class="input-icon-wrapper">
+                                        <i class="fa-solid fa-link input-icon"></i>
+                                    </div>
+                                    <input 
+                                        type="url" 
+                                        id="videoUrl" 
+                                        name="videoUrl" 
+                                        placeholder="Paste YouTube Video URL here (e.g., https://www.youtube.com/watch?v=...)" 
+                                        required
+                                        autocomplete="off"
+                                    >
+                                    <button type="submit" id="submitBtn" class="btn btn-primary">
+                                        <span class="btn-text">Summarize</span>
+                                        <i class="fa-solid fa-wand-magic-sparkles btn-icon"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- Info Feature Cards -->
+                    <section id="featuresSection" class="features-grid">
+                        <div class="glass-card feature-card">
+                            <div class="feature-icon purple">
+                                <i class="fa-solid fa-file-lines"></i>
+                            </div>
+                            <h3>Full Summaries</h3>
+                            <p>Get a comprehensive high-level summary detailing the overall context and core topics of the video.</p>
+                        </div>
+                        <div class="glass-card feature-card">
+                            <div class="feature-icon indigo">
+                                <i class="fa-solid fa-list-check"></i>
+                            </div>
+                            <h3>Key Insights</h3>
+                            <p>Review structured bullet points highlighting the speaker's main arguments and lessons.</p>
+                        </div>
+                        <div class="glass-card feature-card">
+                            <div class="feature-icon pink">
+                                <i class="fa-solid fa-bullseye"></i>
+                            </div>
+                            <h3>Core Takeaway</h3>
+                            <p>Read a high-impact, single-sentence summary detailing the main value of the content.</p>
+                        </div>
+                    </section>
+
+                    <!-- Loading State Container -->
+                    <section id="loadingSection" class="loading-container hidden">
+                        <div class="glass-card loader-card">
+                            <div class="loader-visual">
+                                <div class="spinner">
+                                    <div class="double-bounce1"></div>
+                                    <div class="double-bounce2"></div>
+                                </div>
+                            </div>
+                            <h3 id="loaderStatus" class="loader-status">Fetching video transcript...</h3>
+                            <p class="loader-subtext">This can take a few moments depending on the video length.</p>
+                            
+                            <div class="skeleton-wrapper">
+                                <div class="skeleton skeleton-title"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text short"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Error State Container -->
+                    <section id="errorSection" class="error-container hidden">
+                        <div class="glass-card error-card">
+                            <div class="error-visual">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                            </div>
+                            <h3 class="error-title">Something went wrong</h3>
+                            <p id="errorMessage" class="error-message">We couldn't retrieve the transcript for this video. Subtitles might be disabled.</p>
+                            <button id="tryAgainBtn" class="btn btn-secondary">Try Another Video</button>
+                        </div>
+                    </section>
+
+                    <!-- Results Container -->
+                    <section id="resultsSection" class="results-container hidden">
+                        <!-- Video Metadata Card -->
+                        <div class="glass-card video-meta-card">
+                            <div class="meta-info">
+                                <div class="meta-thumbnail" id="videoThumbnail">
+                                    <!-- Injected by JS -->
+                                </div>
+                                <div class="meta-text">
+                                    <span class="badge">YouTube Video</span>
+                                    <h2 id="videoTitle" class="video-title">Analyzing Developer Productivity</h2>
+                                    <div class="meta-metadata-row">
+                                        <p class="video-link-wrapper">
+                                            <a id="videoUrlLink" href="#" target="_blank" rel="noopener noreferrer">
+                                                <span id="videoUrlText">https://youtube.com/watch?v=...</span>
+                                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                            </a>
+                                        </p>
+                                        <p class="channel-wrapper hidden" id="channelWrapper">
+                                            <span class="channel-label">Channel:</span>
+                                            <a id="channelLink" href="#" target="_blank" rel="noopener noreferrer">
+                                                <i class="fa-solid fa-circle-user channel-icon"></i>
+                                                <span id="channelNameText">Channel Name</span>
+                                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="meta-actions">
+                                    <button id="favoriteBtn" class="btn btn-secondary fav-toggle-btn" title="Add to Favorites">
+                                        <i class="fa-regular fa-star star-icon"></i>
+                                        <span class="fav-btn-label">Save Summary</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary Outputs -->
+                        <div class="results-grid">
+                            <!-- Left: Core Summary & Concluding Takeaway -->
+                            <div class="results-left">
+                                <div class="glass-card content-card summary-card">
+                                    <div class="card-header">
+                                        <div class="header-title">
+                                            <i class="fa-solid fa-file-text title-icon purple-text"></i>
+                                            <h2>Executive Summary</h2>
+                                        </div>
+                                        <div class="actions">
+                                            <button class="action-btn copy-btn" data-target="summaryText" title="Copy Summary">
+                                                <i class="fa-regular fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body" id="summaryText">
+                                        <!-- Injected by JS -->
+                                    </div>
+                                </div>
+
+                                <div class="glass-card content-card takeaway-card">
+                                    <div class="card-header">
+                                        <div class="header-title">
+                                            <i class="fa-solid fa-bullseye title-icon pink-text"></i>
+                                            <h2>Key Takeaway</h2>
+                                        </div>
+                                        <div class="actions">
+                                            <button class="action-btn copy-btn" data-target="takeawayText" title="Copy Takeaway">
+                                                <i class="fa-regular fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p id="takeawayText" class="takeaway-quote">
+                                            <!-- Injected by JS -->
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Key Points Bulletins -->
+                            <div class="results-right">
+                                <div class="glass-card content-card keypoints-card">
+                                    <div class="card-header">
+                                        <div class="header-title">
+                                            <i class="fa-solid fa-list-check title-icon indigo-text"></i>
+                                            <h2>Key Insights & Details</h2>
+                                        </div>
+                                        <div class="actions">
+                                            <button class="action-btn copy-btn" data-target="keyPointsText" title="Copy Key Points">
+                                                <i class="fa-regular fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul id="keyPointsList" class="keypoints-list">
+                                            <!-- Injected by JS -->
+                                        </ul>
+                                        <div id="keyPointsText" class="hidden-copy-source"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Concept Visual Breakdown Section -->
+                        <div class="glass-card content-card visual-card hidden" id="visualBreakdownCard">
+                            <div class="card-header">
+                                <div class="header-title">
+                                    <i class="fa-solid fa-diagram-project title-icon pink-text" id="visualIcon"></i>
+                                    <h2 id="visualTitleText">Visual Concept Breakdown</h2>
+                                </div>
+                            </div>
+                            <div class="card-body" id="visualContainer">
+                                <!-- Injected dynamically by JS based on visual elements type -->
+                            </div>
+                        </div>
+
+                        <!-- Global Action Utilities -->
+                        <div class="results-footer-actions">
+                            <button id="copyAllBtn" class="btn btn-secondary">
+                                <i class="fa-regular fa-copy btn-icon"></i>
+                                <span>Copy Full Summary</span>
+                            </button>
+                            <button id="downloadBtn" class="btn btn-secondary">
+                                <i class="fa-solid fa-download btn-icon"></i>
+                                <span>Download as Text File</span>
+                            </button>
+                            <button id="newSummaryBtn" class="btn btn-primary">
+                                <i class="fa-solid fa-rotate-left btn-icon"></i>
+                                <span>Summarize Another Video</span>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab PANE 2: History (Searchable Previous Queries) -->
+                <div id="historyTab" class="tab-content hidden">
+                    <section class="tab-header">
+                        <h1 class="tab-title">Summary <span class="gradient-text">History</span></h1>
+                        <p class="tab-subtitle">Search, review, or clear your previously summarized video sessions.</p>
+                    </section>
+
+                    <div class="glass-card controls-card">
+                        <div class="search-bar-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="historySearch" placeholder="Search history by title, takeaway or content..." autocomplete="off">
+                        </div>
+                        <button id="clearHistoryBtn" class="btn btn-secondary danger-hover-btn">
+                            <i class="fa-solid fa-trash-can btn-icon"></i>
+                            <span>Clear History</span>
+                        </button>
+                    </div>
+
+                    <div id="historyGrid" class="cards-grid">
+                        <!-- Injected by JS: Cards list -->
+                    </div>
+                </div>
+
+                <!-- Tab PANE 3: Favorites (Star-Saved Records) -->
+                <div id="favoritesTab" class="tab-content hidden">
+                    <section class="tab-header">
+                        <h1 class="tab-title">Saved <span class="gradient-text">Favorites</span></h1>
+                        <p class="tab-subtitle">Quickly look up and review your star-saved video summaries.</p>
+                    </section>
+
+                    <div class="glass-card controls-card">
+                        <div class="search-bar-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="favoritesSearch" placeholder="Search favorites by title..." autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div id="favoritesGrid" class="cards-grid">
+                        <!-- Injected by JS: Starred cards list -->
+                    </div>
+                </div>
+
+                <!-- Tab PANE 4: Auth (Login & Signup) -->
+                <div id="authTab" class="tab-content hidden">
+                    <section class="auth-section">
+                        <div class="glass-card auth-card">
+                            <div class="auth-header">
+                                <div class="auth-toggle-buttons">
+                                    <button class="auth-toggle-btn active" id="toggleLoginBtn">Sign In</button>
+                                    <button class="auth-toggle-btn" id="toggleSignupBtn">Create Account</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Login Form -->
+                            <form id="loginForm" class="auth-form active">
+                                <h2 class="auth-title">Welcome Back</h2>
+                                <p class="auth-subtitle">Sign in to save your summary history and access saved favorites on any device.</p>
+                                
+                                <div class="auth-error-banner hidden" id="loginErrorBanner">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span class="error-text">Incorrect username or password.</span>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label for="loginUsername">Username</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fa-solid fa-user"></i>
+                                        <input type="text" id="loginUsername" placeholder="Enter username" required autocomplete="username">
+                                    </div>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label for="loginPassword">Password</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fa-solid fa-lock"></i>
+                                        <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+                                    <span>Sign In</span>
+                                    <i class="fa-solid fa-right-to-bracket"></i>
+                                </button>
+                            </form>
+                            
+                            <!-- Signup Form -->
+                            <form id="signupForm" class="auth-form hidden">
+                                <h2 class="auth-title">Create Account</h2>
+                                <p class="auth-subtitle">Join ScribeTube to sync history, save unlimited favorites, and organize summaries.</p>
+                                
+                                <div class="auth-error-banner hidden" id="signupErrorBanner">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span class="error-text">Username already exists.</span>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label for="signupUsername">Username</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fa-solid fa-user"></i>
+                                        <input type="text" id="signupUsername" placeholder="Choose a username" required minlength="3" autocomplete="username">
+                                    </div>
+                                    <small class="input-tip">Minimum 3 characters, letters, numbers, and underscores only.</small>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label for="signupPassword">Password</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fa-solid fa-lock"></i>
+                                        <input type="password" id="signupPassword" placeholder="Create a password" required minlength="6" autocomplete="new-password">
+                                    </div>
+                                    <small class="input-tip">Minimum 6 characters.</small>
+                                </div>
+                                
+                                <div class="auth-input-group">
+                                    <label for="signupPasswordConfirm">Confirm Password</label>
+                                    <div class="auth-input-wrapper">
+                                        <i class="fa-solid fa-lock-open"></i>
+                                        <input type="password" id="signupPasswordConfirm" placeholder="Confirm your password" required minlength="6" autocomplete="new-password">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block" id="signupSubmitBtn">
+                                    <span>Create Account</span>
+                                    <i class="fa-solid fa-user-plus"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                </div>
+
+            </main>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <p>&copy; 2026 ScribeTube. Powered by Gemini AI. All rights reserved.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Toast Notification System -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Application Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>
